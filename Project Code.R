@@ -73,14 +73,24 @@ stargazer(
 )
 
 # Creating Figure 1
-ggplot(processed_data, aes(x = predicted_prob)) +
-  geom_histogram(binwidth = 0.05, fill = "blue", alpha = 0.7, color = "black") +
+processed_data$insurance <- recode(processed_data$insurance,
+                                   `1` = "HDHP",
+                                   `2` = "LDHP",
+                                   `3` = "No Insurance",
+                                   .default = NA_character_)
+processed_data$predicted_prob <- predict(logistic_model, type = "response")
+processed_data$insurance <- factor(processed_data$insurance, levels = c("HDHP", "LDHP", "No Insurance"))
+ggplot(processed_data, aes(x = predicted_prob, fill = insurance)) +
+  geom_histogram(binwidth = 0.05, alpha = 0.7, color = "black", position = "identity") +
+  scale_fill_brewer(palette = "Set1") + 
   labs(
-    title = "Histogram of Predicted Probabilities of High ER Utilization",
+    title = "Histogram of Predicted Probabilities of High ER Utilization by Insurance Type",
     x = "Predicted Probability",
-    y = "Count"
+    y = "Count",
+    fill = "Insurance Type"
   ) +
   theme_minimal()
+
 
 # Creating Figure 2
 summary_data <- processed_data %>%
@@ -108,3 +118,4 @@ ggplot(summary_data_long, aes(x = insurance, y = Value, fill = Metric)) +
     values = c("skyblue", "orange")
   ) +
   theme_minimal()
+
