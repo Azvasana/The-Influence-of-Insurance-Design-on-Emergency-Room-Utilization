@@ -5,6 +5,8 @@ library(stargazer)
 library(jtools)
 library(readxl)
 library(tidyr)
+library(gridExtra)
+library(grid)
 
 # Loading the filtered, pre-processed, and merged data-set
 processed_data <- read_xlsx("2022 MEPS dataset.xlsx")
@@ -80,16 +82,31 @@ processed_data$insurance <- recode(processed_data$insurance,
                                    .default = NA_character_)
 processed_data$predicted_prob <- predict(logistic_model, type = "response")
 processed_data$insurance <- factor(processed_data$insurance, levels = c("HDHP", "LDHP", "No Insurance"))
-ggplot(processed_data, aes(x = predicted_prob, fill = insurance)) +
+subset_LDHP <- subset(processed_data, insurance == "LDHP")
+subset_HDHP <- subset(processed_data, insurance == "HDHP")
+hist_LDHP <- ggplot(subset_LDHP, aes(x = predicted_prob, fill = insurance)) +
   geom_histogram(binwidth = 0.05, alpha = 0.7, color = "black", position = "identity") +
-  scale_fill_brewer(palette = "Set1") + 
+  scale_fill_brewer(palette = "Set1") +
   labs(
-    title = "Histogram of Predicted Probabilities of High ER Utilization by Insurance Type",
     x = "Predicted Probability",
-    y = "Count",
-    fill = "Insurance Type"
+    y = "Count"
   ) +
-  theme_minimal()
+  theme_minimal() +
+  theme(legend.position = "none") +  
+  ggtitle("LDHP")
+
+hist_HDHP <- ggplot(subset_HDHP, aes(x = predicted_prob, fill = insurance)) +
+  geom_histogram(binwidth = 0.05, alpha = 0.7, color = "black", position = "identity") +
+  scale_fill_brewer(palette = "Set3") +
+  labs(
+    x = "Predicted Probability",
+    y = "Count"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +  
+  ggtitle("HDHP")
+
+grid.arrange(hist_HDHP, hist_LDHP, ncol = 2, top = textGrob("Histogram of Predicted Probabilities of High ER Utilization"))
 
 
 # Creating Figure 2
@@ -115,7 +132,19 @@ ggplot(summary_data_long, aes(x = insurance, y = Value, fill = Metric)) +
   ) +
   scale_fill_manual(
     labels = c("Mean ER Visits", "Proportion of High Utilizers"),
-    values = c("skyblue", "orange")
+    values = c("coral", "darkseagreen3")
   ) +
   theme_minimal()
 
+# Creating Table 3
+filtered_data <- processed_data %>%
+  filter(high_bp %in% c(-1, 1, 2), cancer %in% c(-1, 1, 2))
+summary_table_filtered <- filtered_data %>%
+  group_by(insurance) %>%
+  summarize(
+    'Average Age' = mean(age, na.rm = TRUE),
+    'High Blood Pressure' = paste0(round((sum(high_bp == 1, na.rm = TRUE) / n()) * 100, 2), "%"),
+    'Cancer' = paste0(round((sum(cancer == 1, na.rm = TRUE) / n()) * 100, 2), "%"),
+    'Total Population' = n(),
+    'Average Family Income' = mean((family_income[family_income > 0]), na.rm = TRUE)
+  )
