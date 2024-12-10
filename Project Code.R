@@ -8,6 +8,7 @@ library(tidyr)
 library(gridExtra)
 library(grid)
 
+
 # Loading the filtered, pre-processed, and merged data-set
 processed_data <- read_xlsx("2022 MEPS dataset.xlsx")
 
@@ -147,7 +148,8 @@ processed_data$insurance <- factor(
 subset_LDHP <- subset(processed_data, insurance == "LDHP")
 subset_HDHP <- subset(processed_data, insurance == "HDHP")
 
-hist_LDHP <- ggplot(subset_LDHP, aes(x = predicted_prob_high, fill = insurance)) +
+hist_LDHP <- ggplot(subset_LDHP, aes(
+  x = predicted_prob_high, fill = insurance)) +
   geom_histogram(
     binwidth = 0.05, alpha = 0.7, color = "black", position = "identity") +
   scale_fill_manual(values = c("red3"), aesthetics = "fill") +
